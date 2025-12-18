@@ -59,6 +59,59 @@ During the reinforcement learning stage, the model’s accuracy steadily increas
 <img src="./images/Curves.png" style="zoom:80%;" />
 
 
+## 📐 Set up
+
+git submodule update --init --recursive
+conda create --name verl-tool-env python=3.10
+conda activate verl-tool-env
+pip install -e verl
+pip install -e ".[vllm,acecoder,torl,search_tool]"
+pip install "flash-attn==2.8.3" --no-build-isolation
+
+## 🚀 Training
+### Stage 1: Cold-start Supervised Fine-tuning (SFT)
+
+We recommend to use the popular [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to perform SFT on our cold-start data.
+1. Install [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory).
+2. After processing, please follow the instructions in LLaMA-Factory to configure the cold-start data in `data/dataset_info.json`, as shown below, then copy the config file `sft_configs/qwen2.5-vl.yaml` into your LLaMA-Factory codebase.
+```
+"AdaTooler-V-CoT-100k": {
+  "file_name": "[YOUR_DATASET_FOLDER]/AdaTooler-V-CoT-100k.json",
+  "formatting": "sharegpt",
+  "columns": {
+    "messages": "conversations",
+    "images": "images"
+  },
+  "tags": {
+    "role_tag": "from",
+    "content_tag": "value",
+    "user_tag": "human",
+    "assistant_tag": "gpt",
+    "system_tag": "system"
+  }
+}
+```
+4. Train Cold-start data with the training configs.
+```
+llamafactory-cli train sft_configs/qwen2.5-vl.yaml
+```
+
+### Stage 2: Reinforcement Learning (RL)
+```
+bash examples/train/AdaTooler-V/train_qwen25vl.sh
+```
+It should be able to run under 8 H100/A100 GPUs with 80GB memory. 
+
+Tips:
+- if output shared memory, try lower the `data.dataloader_num_workers`
+- if out of cuda memory during vllm rollout, try set `actor_rollout_ref.rollout.enforce_eager=True`, might be slower.
+- if out of cuda memory during training, try lower the `use_dynamic_bs=False`.
+
+## 🔮 Evaluation
+```
+bash examples/train/AdaTooler-V/eval.sh
+```
+
 ## Acknowledgements
 
 We sincerely appreciate the contributions of the open-source community. The related projects are as follows: [verl-tool](https://github.com/TIGER-AI-Lab/verl-tool) , [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) 
