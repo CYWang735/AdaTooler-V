@@ -41,16 +41,16 @@ AdaTooler-V significantly outperforms the base model, achieving a **+11.3% gain 
 
 ## 🧠 Some Reasoning Examples of AdaTooler-V-7B
 
-<img src="./images/example1.png" style="zoom:80%;" />
+<img src="./images/example1.png" style="zoom:50%;" />
 
-<img src="./images/example2.png" style="zoom:80%;" />
+<img src="./images/example2.png" style="zoom:50%;" />
 
 
 ## 📈 RL Training Curves
 
 During the reinforcement learning stage, the model’s accuracy steadily increases, indicating effective policy optimization with AT-GRPO. Meanwhile, the average response length drops rapidly in the early phase and then stabilizes, showing that the model quickly eliminates unnecessary tool usage while maintaining a balance between concise reasoning and necessary tool interactions.
 
-<img src="./images/Curves.png" style="zoom:30%;" />
+<img src="./images/Curves.png" style="zoom:10%;" />
 
 
 ## 📐 Set up
