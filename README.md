@@ -50,7 +50,10 @@ AdaTooler-V significantly outperforms the base model, achieving a **+11.3% gain 
 
 During the reinforcement learning stage, the model’s accuracy steadily increases, indicating effective policy optimization with AT-GRPO. Meanwhile, the average response length drops rapidly in the early phase and then stabilizes, showing that the model quickly eliminates unnecessary tool usage while maintaining a balance between concise reasoning and necessary tool interactions.
 
-<img src="./images/Curves.png" style="zoom:10%;" />
+
+<div align="center">
+  <img src="./images/Curves.png" alt="Descriptive alt text" width="55%">
+</div>
 
 
 ## 📐 Set up
