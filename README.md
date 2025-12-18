@@ -39,16 +39,10 @@ AdaTooler-V-7B achieves a **+11.3% absolute improvement on V*** over the base mo
 AdaTooler-V significantly outperforms the base model, achieving a **+11.3% gain on V*** and consistent improvements across multiple benchmarks, demonstrating strong generalization and effective multi-image spatial reasoning.
 
 
+## 🧠 Some Reasoning Examples of AdaTooler-V-7B
 
-## 🧠 Aha Moment in Video Reasoning
-## 🧠 Some Reasoning Examples of SophiaVL-R1
-
-One of the most intriguing outcomes of reinforcement learning in Video-R1 is the emergence of self-reflection reasoning behaviors, commonly referred to as “aha moments”. Some examples are as follows.
-
-<img src="./images/demo1.png" style="zoom:80%;" />
 <img src="./images/example1.png" style="zoom:80%;" />
 
-<img src="./images/demo2.png" style="zoom:80%;" />
 <img src="./images/example2.png" style="zoom:80%;" />
 
 
