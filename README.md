@@ -44,9 +44,13 @@ AdaTooler-V significantly outperforms the base model, achieving a **+11.3% gain 
 
 ## 🧠 Some Reasoning Examples of AdaTooler-V-7B
 
-<img src="./images/example1.png" style="zoom:50%;" />
+<div align="center">
+  <img src="./images/example1.png" alt="Descriptive alt text" width="80%">
+</div>
 
-<img src="./images/example2.png" style="zoom:50%;" />
+<div align="center">
+  <img src="./images/example2.png" alt="Descriptive alt text" width="80%">
+</div>
 
 
 ## 📈 RL Training Curves
