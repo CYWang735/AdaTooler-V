@@ -16,11 +16,6 @@ Moreover, we construct two datasets to support training: **AdaTooler-V-CoT-100k*
 Experiments across twelve benchmarks demonstrate the strong reasoning capability of AdaTooler-V, outperforming existing methods in diverse visual reasoning tasks. Notably, AdaTooler-V-7B achieves an accuracy of 89.8\% on the high-resolution benchmark V*, **surpassing the
 commercial proprietary model GPT-4o and Gemini 1.5 Pro.**
 
-# Video-R1: Reinforcing Video Reasoning in MLLMs
-
-[[📖 Paper](https://arxiv.org/pdf/2503.21776)] [[🤗 Video-R1-7B-model](https://huggingface.co/Video-R1/Video-R1-7B)] [[🤗 Video-R1-train-data](https://huggingface.co/datasets/Video-R1/Video-R1-data)] 
-[[🤖 Video-R1-7B-model](https://modelscope.cn/models/Video-R1/Video-R1-7B)]  [[🤖 Video-R1-train-data](https://modelscope.cn/datasets/Video-R1/Video-R1-data)]
-
 
 ## 🔍 Dataset
 
