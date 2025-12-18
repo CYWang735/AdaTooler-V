@@ -28,7 +28,7 @@ To facilitate effective initialization during the SFT stage, we leverage Qwen2.5
 ## 🏆 Performance
 AdaTooler-V-7B achieves superior performance on a wide range of image and video reasoning benchmarks.
 
-<img src="./images/img_bench.png" style="zoom:80%;" />
+<img src="./images/Img_bench.png" style="zoom:80%;" />
 
 AdaTooler-V-7B achieves a **+11.3% absolute improvement on V*** over the base model and shows **consistent gains across general and high-resolution benchmarks**, demonstrating strong cross-domain generalization and robust multi-image spatial reasoning ability.
 
