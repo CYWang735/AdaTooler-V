@@ -51,123 +51,12 @@ One of the most intriguing outcomes of reinforcement learning in Video-R1 is the
 
 ## 📈 RL Training Curves
 
-The accuracy reward exhibits a generally upward trend, indicating that the model continuously improves its ability to produce correct answers under RL.
+During the reinforcement learning stage, the model’s accuracy steadily increases, indicating effective policy optimization with AT-GRPO. Meanwhile, the average response length drops rapidly in the early phase and then stabilizes, showing that the model quickly eliminates unnecessary tool usage while maintaining a balance between concise reasoning and necessary tool interactions.
 
-Interestingly, the response length curve first drops at the beginning of RL training, then gradually increases. We guess this is because the model initially discards its previous, potentially sub-optimal reasoning style. Then gradually converges to a better and stable reasoning policy.
+<img src="./images/Curves.png" style="zoom:80%;" />
 
-<img src="./images/curves.png" style="zoom:80%;" />
-
-
-
-## 📐 Set up
-
-```bash
-git clone https://github.com/tulerfeng/Video-R1
-cd Video-R1
-
-# build environment
-conda create -n video-r1 python=3.11 
-conda activate video-r1
-bash setup.sh
-
-# qwen video extraction setting, e.g., max frames, resolutions
-# Use the [decord] feature to improve speed
-cd src/qwen-vl-utils
-pip install -e .[decord]
-cd ..
-
-# download training dataset
-git lfs install
-git clone https://huggingface.co/datasets/Video-R1/Video-R1-data
-```
-
-Please put the downloaded dataset to `src/r1-v/Video-R1-data/`
-
-Then, unzip the data
-
-```
-python ./src/unzip.py
-```
-
-The `Video-R1-260k.json` file is for RL training while `Video-R1-COT-165k.json` is for SFT cold start.
-
-Qwen2.5-VL has been frequently updated in the Transformers library, which may cause version-related bugs or inconsistencies. Our code is compatible with the following version, please download at [here](https://drive.google.com/file/d/1Kc81WZitEhUZYWXpL6y2GXuSXufLSYcF/view?usp=sharing)
-
-Then install our provided version of transformers
-
-```bash
-unzip transformers-main.zip
-cd ./transformers-main
-pip install .
-```
-
-For vLLM library, please use 0.7.2 version.
-
-For trl library, please use 0.16.0 version.
-
-## 🚀 Training
-
-We first perform supervised fine-tuning on the Video-R1-COT-165k dataset for one epoch to obtain the Qwen2.5-VL-7B-SFT model. If you want to perform CoT annotation on your own data, please refer to `src/generate_cot_vllm.py`
-
-```bash
-bash ./src/scripts/run_sft_video.sh
-```
-If you want to skip the SFT process, we also provide one of our SFT models at [🤗Qwen2.5-VL-SFT](https://huggingface.co/Video-R1/Qwen2.5-VL-7B-COT-SFT). 
-
-This is followed by RL training on the Video-R1-260k dataset to produce the final Video-R1 model. Due to current computational resource limitations, we train the model for only 1.2k RL steps.  
-
-The script for training the obtained Qwen2.5-VL-7B-SFT model with T-GRPO or GRPO is as follows
-
-```bash
-bash ./src/scripts/run_grpo_video.sh
-```
-
-You can also use the following script to enable vLLM acceleration for RL training
-
-```bash
-bash ./src/scripts/run_grpo_vllm_qwen25vl.sh
-```
-
-For efficiency considerations, we limit the maximum number of video frames to 16 during training. Each frame is processed at a max resolution of 128 × 28 × 28.  You can set this in `src/qwen-vl-utils`
-
-Please keep per_device_train_batch_size=1 as in previous work r1-v
-
-## 🔮 Inference & Evaluation
-
-During inference, we increase the max frame resolution to 256 × 28 × 28 and max frames to 16/32/64 to enhance performance. You can easily set this in `src/qwen-vl-utils`
-
-For all evaluations, we follow the decoding configuration used in the official Qwen2.5-VL demo, with top\_p = 0.001 and temperature = 0.01. Setting large top_p may encounter messy output when inference.
-
-We recommend using our provided json files and scripts for easier evaluation. 
-
-The json files can be downloaded at: [[🤗 Video-R1-eval](https://huggingface.co/datasets/Video-R1/Video-R1-eval)], put them in `/src/r1-v/Evaluation` 
-
-Next, download the evaluation video data from each benchmark’s official website, and place them in `/src/r1-v/Evaluation` as specified in the provided json files.
-
-Finally, conduct evaluation on all benchmarks using the following scripts
-
-```bash
-bash ./src/eval_bench.sh
-```
-For infernce on a single example, you may use:
-
-```bash
-python ./src/inference_example.py
-```
 
 ## Acknowledgements
 
-We sincerely appreciate the contributions of the open-source community. The related projects are as follows: [R1-V](https://github.com/Deep-Agent/R1-V) , [DeepSeek-R1](https://github.com/deepseek-ai/DeepSeek-R1) 
+We sincerely appreciate the contributions of the open-source community. The related projects are as follows: [verl-tool](https://github.com/TIGER-AI-Lab/verl-tool) , [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) 
 
-## Citations
-
-If you find our work helpful for your research, please consider citing our work.   
-
-```
-@article{feng2025video,
-  title={Video-R1: Reinforcing Video Reasoning in MLLMs},
-  author={Feng, Kaituo and Gong, Kaixiong and Li, Bohao and Guo, Zonghao and Wang, Yibing and Peng, Tianshuo and Wang, Benyou and Yue, Xiangyu},
-  journal={arXiv preprint arXiv:2503.21776},
-  year={2025}
-}
-```
