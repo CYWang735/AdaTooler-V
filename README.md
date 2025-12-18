@@ -16,6 +16,9 @@ Moreover, we construct two datasets to support training: **AdaTooler-V-CoT-100k*
 Experiments across twelve benchmarks demonstrate the strong reasoning capability of AdaTooler-V, outperforming existing methods in diverse visual reasoning tasks. Notably, AdaTooler-V-7B achieves an accuracy of 89.8\% on the high-resolution benchmark V*, **surpassing the
 commercial proprietary model GPT-4o and Gemini 1.5 Pro.**
 
+<div align="center">
+  <img src="./images/bar.png" alt="Descriptive alt text" width="80%">
+</div>
 
 ## 🔍 Dataset
 
