@@ -26,19 +26,18 @@ To support adaptive tool-use learning across multiple modalities, we construct t
 To facilitate effective initialization during the SFT stage, we leverage Qwen2.5-VL-72B-Instruct to automatically produce Chain-of-Thought (CoT) rationales for all samples in AdaTooler-V-300k. Following generation, we apply a sequence of rule-based filtering procedures to eliminate low-quality or semantically inconsistent outputs. This process yields a high-fidelity corpus, AdaTooler-V-CoT-100k.
 
 ## 🏆 Performance
+AdaTooler-V-7B achieves superior performance on a wide range of image and video reasoning benchmarks.
 
-<img src="./images/performance.png" style="zoom:80%;" />
+<img src="./images/img_bench.png" style="zoom:80%;" />
 
-Video-R1 significantly outperforms previous models across most benchmarks. Notably, on VSI-Bench, which focuses on spatial reasoning in videos, Video-R1-7B achieves a new state-of-the-art accuracy of 35.8%, surpassing GPT-4o, a proprietary model, while using only 32 frames and 7B parameters. 
-
-This highlights the necessity of explicit reasoning capability in solving video tasks, and confirms the effectiveness of reinforcement learning for video tasks.
-
+AdaTooler-V-7B achieves a **+11.3% absolute improvement on V*** over the base model and shows **consistent gains across general and high-resolution benchmarks**, demonstrating strong cross-domain generalization and robust multi-image spatial reasoning ability.
 
 <div align="center">
-  <img src="./images/frames.png" alt="Descriptive alt text" width="85%">
+  <img src="./images/video_bench.png" alt="Descriptive alt text" width="85%">
 </div>
 
-Besides, although the model is trained using only 16 frames, we find that evaluating on more frames (e.g., 64) generally leads to better performance, particularly on benchmarks with longer videos. These results indicate the importance of training models to reason over more frames.
+AdaTooler-V significantly outperforms the base model, achieving a **+11.3% gain on V*** and consistent improvements across multiple benchmarks, demonstrating strong generalization and effective multi-image spatial reasoning.
+
 
 
 ## 🧠 Aha Moment in Video Reasoning
