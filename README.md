@@ -58,7 +58,6 @@ During the reinforcement learning stage, the model’s accuracy steadily increas
 git submodule update --init --recursive
 conda create --name verl-tool-env python=3.10
 conda activate verl-tool-env
-pip install -e verl
 pip install -e ".[vllm,acecoder,torl,search_tool]"
 pip install "flash-attn==2.8.3" --no-build-isolation
 
