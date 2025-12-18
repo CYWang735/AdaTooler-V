@@ -19,11 +19,11 @@ commercial proprietary model GPT-4o and Gemini 1.5 Pro.**
 
 ## 🔍 Dataset
 
- To overcome the scarcity of high-quality video reasoning training data, we strategically introduce image-based reasoning data as part of training data.  We collect data from a variety of public datasets and carefully sample and balance the proportion of each subset. 
+To support adaptive tool-use learning across multiple modalities, we construct two large-scale datasets for different training stages: AdaTooler-V-CoT-100k for SFT Cold start and AdaTooler-V-300k for RL.
 
 <img src="./images/dataset.png" style="zoom:80%;" />
 
-To facilitate an effective SFT cold start, we leverage Qwen2.5-VL-72B  to generate COT rationales for the samples in Video-R1-260k. After applying basic rule-based filtering to remove low-quality or inconsistent outputs, we obtain a high-quality CoT dataset, Video-R1-COT 165k.
+To facilitate effective initialization during the SFT stage, we leverage Qwen2.5-VL-72B-Instruct to automatically produce Chain-of-Thought (CoT) rationales for all samples in AdaTooler-V-300k. Following generation, we apply a sequence of rule-based filtering procedures to eliminate low-quality or semantically inconsistent outputs. This process yields a high-fidelity corpus, AdaTooler-V-CoT-100k.
 
 ## 🏆 Performance
 
