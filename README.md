@@ -67,6 +67,10 @@ During the reinforcement learning stage, the model’s accuracy steadily increas
   <img src="./images/Curves.png" alt="Descriptive alt text" width="55%">
 </div>
 
+## 📝 TODO
+- [x] Release the eval data
+- [x] Release the Traing data
+- [x] Release the Models
 
 ## 📐 Set up
 ```
