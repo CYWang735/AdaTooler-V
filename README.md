@@ -70,9 +70,11 @@ During the reinforcement learning stage, the model’s accuracy steadily increas
 
 ## 📐 Set up
 ```
+cd verltool
 git submodule update --init --recursive
 conda create --name verl-tool-env python=3.10
 conda activate verl-tool-env
+pip install -e verl
 pip install -e ".[vllm,acecoder,torl,search_tool]"
 pip install "flash-attn==2.8.3" --no-build-isolation
 ```
@@ -82,7 +84,11 @@ pip install "flash-attn==2.8.3" --no-build-isolation
 
 We recommend to use the popular [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to perform SFT on our cold-start data.
 1. Install [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory).
-2. After processing, please follow the instructions in LLaMA-Factory to configure the cold-start data in `data/dataset_info.json`, as shown below, then copy the config file `sft_configs/qwen2.5-vl.yaml` into your LLaMA-Factory codebase.
+2. Use the script `scripts/preprocess_coldstart.py` to download [AdaTooler-V-CoT-100k](ChaoyangWang/AdaTooler-V-CoT-100k) and produce the required data format by LLaMA-Factory. This script automatically extracts images and generates a JSON file from the original parquet-format dataset.
+```
+python3 scripts/preprocess_coldstart.py --dataset_path ChaoyangWang/AdaTooler-V-CoT-100k --output_dir [YOUR_DATASET_FOLDER]
+```
+3. After processing, please follow the instructions in LLaMA-Factory to configure the cold-start data in `data/dataset_info.json`, as shown below, then copy the config file `sft_configs/qwen2.5-vl.yaml` into your LLaMA-Factory codebase.
 ```
 "AdaTooler-V-CoT-100k": {
   "file_name": "[YOUR_DATASET_FOLDER]/AdaTooler-V-CoT-100k.json",
