@@ -68,9 +68,9 @@ During the reinforcement learning stage, the model’s accuracy steadily increas
 </div>
 
 ## 📝 TODO
-- [x] Release the eval data
-- [x] Release the Traing data
-- [x] Release the Models
+- [] Release the eval data
+- [] Release the Traing data
+- [] Release the Models
 
 ## 📐 Set up
 ```
