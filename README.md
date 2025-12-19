@@ -20,6 +20,11 @@ commercial proprietary model GPT-4o and Gemini 1.5 Pro.**
   <img src="./images/bar.png" alt="Descriptive alt text" width="80%">
 </div>
 
+## 📝 TODO
+- [ ] Release the eval data
+- [ ] Release the Traing data
+- [ ] Release the Models
+
 ## 🔍 Dataset
 
 To support adaptive tool-use learning across multiple modalities, we construct two large-scale datasets for different training stages: AdaTooler-V-CoT-100k for SFT Cold start and AdaTooler-V-300k for RL.
@@ -67,10 +72,7 @@ During the reinforcement learning stage, the model’s accuracy steadily increas
   <img src="./images/Curves.png" alt="Descriptive alt text" width="55%">
 </div>
 
-## 📝 TODO
-- [ ] Release the eval data
-- [ ] Release the Traing data
-- [ ] Release the Models
+
 
 ## 📐 Set up
 ```
