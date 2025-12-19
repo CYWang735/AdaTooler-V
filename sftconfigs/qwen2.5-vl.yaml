@@ -17,7 +17,7 @@ flash_attn: fa2
 deepspeed: examples/deepspeed/ds_z3_offload_config.json
 
 ### dataset
-dataset: minio3_coldstart
+dataset: ChaoyangWang/AdaTooler-V-CoT-100k
 template: qwen2_vl
 cutoff_len: 32768 #2048
 max_samples: 100000
@@ -26,7 +26,7 @@ preprocessing_num_workers: 16
 dataloader_num_workers: 0
 
 ### output
-output_dir: saves/qwen2_5vl-7b/full/mini-o3-coldstart
+output_dir: saves/qwen2_5vl-7b/full/AdaTooler-V--coldstart
 logging_steps: 10
 save_steps: 500
 plot_loss: true
