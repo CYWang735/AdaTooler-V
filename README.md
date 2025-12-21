@@ -136,3 +136,16 @@ bash examples/train/AdaTooler-V/eval.sh
 ## Acknowledgements
 
 We sincerely appreciate the contributions of the open-source community. The related projects are as follows: [verl-tool](https://github.com/TIGER-AI-Lab/verl-tool) , [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) 
+
+## Citations
+
+If you find our work helpful for your research, please consider citing our work.   
+
+```
+@article{wang2025adatooler,
+  title={AdaTooler-V: Adaptive Tool-Use for Images and Videos},
+  author={Wang, Chaoyang and Feng, Kaituo and Chen, Dongyang and Wang, Zhongyu and Li, Zhixun and Gao, Sicheng and Meng, Meng and Zhou, Xu and Zhang, Manyuan and Shang, Yuzhang and others},
+  journal={arXiv preprint arXiv:2512.16918},
+  year={2025}
+}
+```
