@@ -131,6 +131,7 @@ Tips:
 
 ## 🔮 Evaluation
 ```
+cd verltool
 bash examples/train/AdaTooler-V/eval.sh
 ```
 
