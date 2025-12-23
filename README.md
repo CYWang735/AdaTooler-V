@@ -119,6 +119,7 @@ llamafactory-cli train sft_configs/qwen2.5-vl.yaml
 
 ### Stage 2: Reinforcement Learning (RL)
 ```
+cd verltool
 bash examples/train/AdaTooler-V/train_qwen25vl.sh
 ```
 It should be able to run under 8 H100/A100 GPUs with 80GB memory. 
