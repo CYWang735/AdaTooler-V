@@ -28,6 +28,90 @@ from pathlib import Path
 from verl import DataProto
 
 
+def extract_answer(text):
+    match = re.search(r"<answer>(.*?)</answer>", text, re.DOTALL)
+    return match.group(1).strip() if match else None
+
+
+def math_format_reward(predict_str: str) -> float:
+    pattern = re.compile(r"<think>(.*?)</think>.*<answer>(.*?)</answer>.*", re.DOTALL)
+    format_match = re.fullmatch(pattern, predict_str)
+    return 1.0 if format_match else 0.0
+
+
+def math_acc_reward(predict_str: str, ground_truth: str) -> float:
+    match = re.search(r"<answer>(.*?)</answer>", predict_str, re.DOTALL)
+    if match:
+        predict_str_strip= match.group(1)
+    else:
+        predict_str_strip = predict_str
+    # answer = extract_boxed_content(predict_str_strip)
+    return 1.0 if grade_answer(predict_str_strip, ground_truth) else 0.0
+
+
+def math_compute_score(predict_str: str, ground_truth: str, steps = 100000) -> float:
+    if math_format_reward(predict_str):
+        match = re.search(r"<answer>(.*?)</answer>", predict_str, re.DOTALL)
+        if match:
+            predict_str_strip= match.group(1)
+        else:
+            predict_str_strip = predict_str
+        return math_acc_reward(predict_str_strip, ground_truth)
+    else:
+        return 0.0
+
+def choices_compute_score(predict: str, ground_truth: list, steps = 100000) -> float:
+    if math_format_reward(predict):
+        match = re.search(r"<answer>(.*?)</answer>", predict, re.DOTALL)
+        if match:
+            
+            predict_str_strip= match.group(1)
+        else:
+            predict_str_strip = predict
+        if predict == "":
+            return 0.0
+        answer = [a.strip() for a in predict_str_strip.split(',')]
+        if len(answer)!= len(ground_truth):
+            return 0.0
+        for a in answer:
+            if a not in ground_truth:
+                return 0.0
+        return 1.0
+    else:
+        return 0.0
+
+def ocr_compute_score(predict_str: str, ground_truth: str, steps = 100000) -> float:
+    if math_format_reward(predict_str):
+        match = re.search(r"<answer>(.*?)</answer>", predict_str, re.DOTALL)
+        if match:
+            predict_str_strip= match.group(1)
+        else:
+            predict_str_strip = predict_str
+        werate=wer(hypothesis=predict_str_strip.strip(), reference=ground_truth.strip())
+        return np.exp(-werate)
+    else:
+        return 0.0
+
+def free_form_compute_score(predict_str: str, ground_truth: str, steps = 100000) -> float:
+    if math_format_reward(predict_str):
+        match = re.search(r"<answer>(.*?)</answer>", predict_str, re.DOTALL)
+        if match:
+            predict_str_strip= match.group(1)
+        else:
+            predict_str_strip = predict_str
+        predict_str_strip = predict_str_strip.replace("\n", " ")
+        ground_truth=ground_truth.replace("\n", " ")
+        scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+        scores = scorer.score(predict_str_strip.strip(), ground_truth.strip())
+        r1 = scores['rouge1'].fmeasure
+        r2 = scores['rouge2'].fmeasure
+        rl = scores['rougeL'].fmeasure
+        return (r1+r2+rl)/3
+    else:
+        return 0.0
+
+
+
 def normalize_answer(answer):
     if answer is None: return answer
     if 'dfrac' in answer: answer = answer.replace("dfrac", "frac")
@@ -41,21 +125,35 @@ def normalize_answer(answer):
     return answer 
 
 
-def pixel_reasoner_score(solution_str, ground_truth):
-    if isinstance(ground_truth, list):
-        return max([pixel_reasoner_score(solution_str, gt) for gt in ground_truth])
-    solution_str = normalize_answer(solution_str)
-    if "\\boxed" in ground_truth:
-        ground_truth = normalize_answer(ground_truth)
-    else:
-        ground_truth = f"\\boxed{{{ground_truth}}}"
-    verify_result = verify(parse(solution_str, parsing_timeout=None), parse(ground_truth, parsing_timeout=None), timeout_seconds=None)
-    if not verify_result:
-        verify_result = verify(parse(solution_str.lower(), parsing_timeout=None), parse(ground_truth.lower(), parsing_timeout=None), timeout_seconds=None)
-    if verify_result:
-        return 1.0
-    else:
-        return 0.0
+def compute_ATReward(delta_s, n_tool, n_max, gamma):
+    """
+    Compute R_i^t = ΔS_i * exp( -γ * ((n_tool - n_max) / n_max)^2 )
+
+    Args:
+        delta_s (float or np.ndarray): ΔS_i
+        n_tool (int or np.ndarray): n_tool
+        n_max (int or float): n_max (> 0)
+        gamma (float): γ
+
+    Returns:
+        float or np.ndarray: R_i^t
+    """
+    assert n_max > 0, "n_max must be positive"
+
+    ratio = (n_tool - n_max) / n_max
+    reward = delta_s * np.exp(-gamma * ratio ** 2)
+    return reward
+
+
+def pixel_reasoner_score(predict_str: str, ground_truth, problem_type: str) -> float:
+    if problem_type == "numerical":
+        return math_compute_score(predict_str, ground_truth)
+    elif problem_type == "multiple choice":
+        return choices_compute_score(predict_str, ground_truth)
+    elif problem_type == "OCR":
+        return ocr_compute_score(predict_str, ground_truth)
+    else:  # free-form
+        return free_form_compute_score(predict_str, ground_truth)
 
 @register("pixel_reasoner")
 class PixelReasonerRewardManager:
@@ -72,9 +170,10 @@ class PixelReasonerRewardManager:
         self.add_curiousity_penalty = True
         self.add_action_redundancy_penalty = True
         self.group_tool_call_rate_lower_bound = 0.3 # H in the paper
-        self.action_redundancy_limit = 1 # n_{vo} in the paper, add penalty if the number of redundant actions is larger than this limit
+        self.action_max_limit = 6 # n_{vo} in the paper, add penalty if the number of redundant actions is larger than this limit
         self.alpha = 0.5
         self.beta = 0.05
+        self.gamma = 2
 
     def get_group_info(self, data: DataProto):
         group_info = {}
@@ -100,21 +199,16 @@ class PixelReasonerRewardManager:
             info['tool_call_total'] = info['num_valid_actions'].sum()
         return group_info    
     
-    def add_additional_penalties(self, response: str, data_i, scores_i: dict, group_info:dict):
+    def add_additional_penalties(self, response: str, data_i, scores_i: dict, group_info:dict, extra_info:dict):
+        
         if "tool_interact_info" in data_i.non_tensor_batch:
             tool_interact_info = data_i.non_tensor_batch.get('tool_interact_info', None)
             num_turn = len(tool_interact_info) if tool_interact_info is not None else 0
             num_valid_action = sum([1 for t in tool_interact_info if t.get('valid_action', False)]) if tool_interact_info is not None else 0
-            if self.add_curiousity_penalty:
-                penalty = (num_valid_action != 0) * max(0, self.group_tool_call_rate_lower_bound - group_info['group_tool_call_rate'])
-                penalty *= self.alpha
-                scores_i['score'] += penalty
-                scores_i['curiousity_penalty'] = penalty
-            if self.add_action_redundancy_penalty:
-                penalty = min(self.action_redundancy_limit - num_valid_action, 0)
-                penalty *= self.beta
-                scores_i['score'] += penalty
-                scores_i['action_redundancy_penalty'] = penalty
+            TB_score = extra_info["Tool_Benefit_Score"]
+            
+            AT_reward = compute_ATReward(TB_score, num_valid_action, self.action_max_limit, self.gamma)
+            scores_i['score'] += self.alpha * AT_reward
         
         return scores_i
     
@@ -165,17 +259,19 @@ class PixelReasonerRewardManager:
 
             extra_info = data_item.non_tensor_batch.get('extra_info', None)
 
+
             torl_score = self.compute_score(
                 # data_source=data_source,
                 solution_str=response_str,
                 ground_truth=ground_truth,
+                problem_type = extra_info["problem_type"],
                 # extra_info=extra_info,
             ) # 1 or -1
             score['accuracy'] = 1. if torl_score > 0 else 0.
             score['score'] = torl_score
 
             # add additional penalty
-            score = self.add_additional_penalties(response_str, data_item, score, group_info.get(data_item.non_tensor_batch.get('uid', i), {}))      
+            score = self.add_additional_penalties(response_str, data_item, score, group_info.get(data_item.non_tensor_batch.get('uid', i), {}), extra_info)      
 
             if score['accuracy'] > 0:
                 reward_extra_info['correct_response_length'].append(valid_response_length)
@@ -234,3 +330,5 @@ class PixelReasonerRewardManager:
             }
         else:
             return reward_tensor
+
+
