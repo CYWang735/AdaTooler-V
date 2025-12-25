@@ -120,7 +120,8 @@ llamafactory-cli train sft_configs/qwen2.5-vl.yaml
 
 ### Stage 2: Reinforcement Learning (RL)
 #### Data Preprocessing
-We extract the video data into a multi-frame(64 frames), which can be obtained from [AdaTooler-V-train-data](https://huggingface.co/datasets/AdaTooler-V/AdaTooler-V-300k). We also provide the raw video data. If you would like to customize the number of video frames used for training, you can refer to the code in `scripts/extact_frames.py` to implement this yourself.
+We extract the video data into a multi-frame(64 frames), which can be directly obtained from [AdaTooler-V-train-data](https://huggingface.co/datasets/AdaTooler-V/AdaTooler-V-300k). 
+We also provide the raw video data. If you would like to customize the number of video frames used for training, you can refer to the code in `scripts/extact_frames.py` to implement this yourself.
 ```
 cd verltool
 python examples/data_preprocess/pixel_reasoner/prepare_train.py --dataset_path=AdaTooler-V/AdaTooler-V-300k --local_dir=data/AdaTooler-V --version max_8192 --include_videos=True --filter_len=8192
