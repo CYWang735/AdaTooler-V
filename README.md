@@ -21,7 +21,7 @@ commercial proprietary model GPT-4o and Gemini 1.5 Pro.**
 </div>
 
 ## 📝 TODO
-- [×] Release the eval data
+- [x] Release the eval data
 - [ ] Release the Traing data
 - [ ] Release the Models
 
