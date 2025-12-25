@@ -119,6 +119,14 @@ llamafactory-cli train sft_configs/qwen2.5-vl.yaml
 ```
 
 ### Stage 2: Reinforcement Learning (RL)
+#### Data Preprocessing
+
+```
+cd verltool
+python examples/data_preprocess/pixel_reasoner/prepare_train.py --dataset_path=AdaTooler-V/AdaTooler-V-300k --local_dir=data/AdaTooler-V --version max_8192 --include_videos=True --filter_len=8192
+```
+
+#### Training
 The reinforcement learning is based on the cold-start model. You could either use the model produced in stage 1, or directly download it from [AdaTooler-V-SFT-model](https://huggingface.co/AdaTooler-V/AdaTooler-V-SFT-model). 
 ```
 cd verltool
