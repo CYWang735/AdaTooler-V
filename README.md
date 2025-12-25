@@ -121,6 +121,7 @@ llamafactory-cli train sft_configs/qwen2.5-vl.yaml
 ### Stage 2: Reinforcement Learning (RL)
 The reinforcement learning is based on the cold-start model. You could either use the model produced in stage 1, or directly download it from [AdaTooler-V-SFT-model](https://huggingface.co/AdaTooler-V/AdaTooler-V-SFT-model). 
 ```
+cd verltool
 bash examples/train/AdaTooler-V/train_qwen25vl.sh
 ```
 It should be able to run under 8 H100/A100 GPUs with 80GB memory. 
@@ -138,6 +139,7 @@ The json files can be downloaded at: [[🤗 AdaTooler-V-eval](https://huggingfac
 Finally, conduct evaluation on all benchmarks using the following scripts
 
 ```
+cd verltool
 bash examples/train/AdaTooler-V/eval.sh
 ```
 
