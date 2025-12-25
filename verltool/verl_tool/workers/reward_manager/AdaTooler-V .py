@@ -155,7 +155,7 @@ def pixel_reasoner_score(predict_str: str, ground_truth, problem_type: str) -> f
     else:  # free-form
         return free_form_compute_score(predict_str, ground_truth)
 
-@register("pixel_reasoner")
+@register("AdaTooler-V")
 class PixelReasonerRewardManager:
     """
     A reward manager for the Pixel Reasoner.
