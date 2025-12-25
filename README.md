@@ -124,7 +124,7 @@ The reinforcement learning is based on the cold-start model. You could either us
 cd verltool
 bash examples/train/AdaTooler-V/train_qwen25vl.sh
 ```
-It should be able to run under 8 H100/A100 GPUs with 80GB memory. 
+It should be able to run under 8 H100/A100 GPUs with 80GB memory. From more details，please refer to [verl-tool](https://github.com/TIGER-AI-Lab/verl-tool).
 
 Tips:
 - if output shared memory, try lower the `data.dataloader_num_workers`
