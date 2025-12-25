@@ -3,8 +3,8 @@ unset ROCR_VISIBLE_DEVICES
 dataset_name=ChaoyangWang/AdaTooler-V-300k
 train_data=[$(pwd)/data/${dataset_name}/train.parquet]
 val_data=[$(pwd)/data/${dataset_name}/val.parquet]
-model_name=Qwen/Qwen2.5-VL-7B-Instruct
-# model_name=TIGER-Lab/PixelReasoner-RL-v1
+# model_name=Qwen/Qwen2.5-VL-7B-Instruct
+model_name=https://huggingface.co/AdaTooler-V/AdaTooler-V-SFT-model
 rl_alg=grpo # gae(ppo) or grpo, if grpo, then better set n>1 otherwise the group norm can not be effective
 n_gpus_per_node=8
 n_nodes=1
