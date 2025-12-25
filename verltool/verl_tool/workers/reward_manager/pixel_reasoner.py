@@ -171,7 +171,7 @@ class PixelReasonerRewardManager:
         self.add_action_redundancy_penalty = True
         self.group_tool_call_rate_lower_bound = 0.3 # H in the paper
         self.action_max_limit = 6 # n_{vo} in the paper, add penalty if the number of redundant actions is larger than this limit
-        self.alpha = 0.5
+        self.alpha = 0.6
         self.beta = 0.05
         self.gamma = 2
 
