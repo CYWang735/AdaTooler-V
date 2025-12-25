@@ -21,9 +21,10 @@ commercial proprietary model GPT-4o and Gemini 1.5 Pro.**
 </div>
 
 ## 📝 TODO
-- [x] Release the eval data
-- [ ] Release the Traing data
-- [ ] Release the Models
+- [x] Release the RL Traing data
+- [ ] Release the SFT Traing data
+- [ ] Release the eval data
+- [ ] Release the SFT Model
 
 ## 🔍 Dataset
 
