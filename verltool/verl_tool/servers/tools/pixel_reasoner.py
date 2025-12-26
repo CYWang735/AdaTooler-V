@@ -12,6 +12,40 @@ from PIL import Image
 from pathlib import Path
 from verl_tool.agent_loop.vision_utils import process_image
 
+
+def plot_movement(im, data, input_width, input_height):
+    """
+    在图像上绘制从起点到终点的路径。
+    """
+    img = im.copy()
+    width, height = img.size
+    draw = ImageDraw.Draw(img)
+    colors = ['red', 'blue']
+    line_width = 4
+
+    if data is None:
+        return img
+
+    for line in data:
+        start_point = line.get("start_point_2d", None)
+        end_point = line.get("end_point_2d", None)
+        if start_point is None or end_point is None:
+            continue
+
+        abs_x_start = float(start_point[0]) / 1000 * width
+        abs_y_start = float(start_point[1]) / 1000 * height
+        abs_x_end = float(end_point[0]) / 1000 * width
+        abs_y_end = float(end_point[1]) / 1000 * height
+
+        draw.line((abs_x_start, abs_y_start, abs_x_end, abs_y_end), fill='black', width=line_width)
+        for i, point in enumerate([start_point, end_point]):
+            color = colors[i % len(colors)]
+            abs_x = float(point[0]) / 1000 * width
+            abs_y = float(point[1]) / 1000 * height
+            radius = 4
+            draw.ellipse([(abs_x - radius, abs_y - radius), (abs_x + radius, abs_y + radius)], fill=color)
+    return img
+
 def crop(str_image, bbox_2d, padding=(0.1,0.1)):
     """
     Crop the image based on the bounding box coordinates.
@@ -78,7 +112,7 @@ class PixelReasonerTool(BaseTool):
     tool_type = "pixel_reasoner"
 
     stop_tokens = ["</tool_call>"]
-    valid_mcp_func_names = ['zoom_in', 'crop_image_normalized', 'select_frames', 'crop_image']
+    valid_mcp_func_names = ['zoom_in', 'crop_image_normalized', 'VideoClip', 'crop_image', 'PathTracer', 'FrameAt']
 
     def __init__(self, num_workers=1):
         super().__init__(num_workers)
@@ -229,7 +263,7 @@ class PixelReasonerTool(BaseTool):
                 print(f"Error processing zoom-in action: {str(e)}; parameters: {parameters}")
         return observation, valid
     
-    async def conduct_select_frames_action_async(self, parameters, env):
+    async def conduct_VideoClip_action_async(self, parameters, env):
         """
         Execute the select frames action asynchronously with concurrent processing.
         """
@@ -263,6 +297,73 @@ class PixelReasonerTool(BaseTool):
                     json.dump(parameters, f, indent=4)
                 print(f"Error processing select frames action: {str(e)}; parameters: {parameters}")
         return observation, valid
+
+    async def conduct_FrameAt_action_async(self, parameters, env):
+        """
+        Execute the select frames action asynchronously with concurrent processing.
+        """
+        valid = False
+        missing_parameters = []
+        if 'target_frame' not in parameters:
+            missing_parameters.append('target_frame')
+        if missing_parameters:
+            observation = f"Missing parameters: {', '.join(missing_parameters)}"
+        elif not isinstance(parameters['target_frame'], list):
+            observation = "Invalid target_frame format. It should be a list of integers."
+        elif not all(isinstance(frame, int) and 1 <= frame <= len(env['images']) for frame in parameters['target_frame']):
+            observation = f"Invalid target_frame indices. Each index should be an integer between 1 and the number of previous images ({len(env['images'])})."
+        else:
+            try:
+                target_frame_sources = [env['images'][frame - 1] for frame in parameters['target_frame']]
+                
+                # Process all frames concurrently
+                target_frames = await self._process_multiple_images(target_frame_sources)
+                
+                target_frame_width, target_frame_height = target_frames[0].size
+                num_frames = len(target_frames)
+                observation = {
+                    'obs': f"Here are the selected frame. (Frame Size: {target_frame_width}x{target_frame_height}, Numbered 1 to {num_frames}):" + "<image>" * len(target_frames),
+                    'image': [encode_image_url(img) for img in target_frames]
+                }
+                valid = True
+            except Exception as e:
+                observation = f"Error processing frame: {str(e)}"
+                with open('test.json', 'w') as f:
+                    json.dump(parameters, f, indent=4)
+                print(f"Error processing FrameAt action: {str(e)}; parameters: {parameters}")
+        return observation, valid
+
+    async def conduct_path_tracer_action_async(self, parameters, env):
+         """
+         在指定图像上绘制路径。
+         """
+         valid = False
+         required = ['start_point_2d', 'end_point_2d', 'target_image']
+         if not all(k in parameters for k in required):
+             missing = [k for k in required if k not in parameters]
+             return f"Missing parameters: {', '.join(missing)}", False
+
+         try:
+             target_idx = int(parameters['target_image'])
+             img = env['images'][target_idx - 1]
+             if isinstance(img, str):
+                 img = decode_image_url(img)
+             elif isinstance(img, Path):
+                 img = Image.open(img)
+
+             width, height = img.size
+             path_data = [{"start_point_2d": parameters['start_point_2d'],
+                           "end_point_2d": parameters['end_point_2d']}]
+             plotted_img = plot_movement(img, path_data, width, height)
+             encoded_img = encode_image_url(plotted_img)
+             observation = {
+                 "obs": f"Here is the cropped image. (Image Size: {width}x{height})\n<image>",
+                 "image": encoded_img
+             }
+             valid = True
+         except Exception as e:
+             observation = f"Error in path tracing: {str(e)}"
+         return observation, valid
 
     async def aget_observations(self, trajectory_ids: List[str], actions: List[str], extra_fields: List[Dict[str, Any]]):
         """
@@ -323,13 +424,20 @@ class PixelReasonerTool(BaseTool):
                     observation = f"Error processing {parsed_action['name']} action: {str(e)}"
                     valid = False
                     print(f"Error processing {parsed_action['name']} action: {str(e)}; parameters: {parsed_action['arguments']}")
-            elif parsed_action['name'] == 'select_frames':
+            elif parsed_action['name'] == 'VideoClip':
                 try:
-                    observation, valid = await self.conduct_select_frames_action_async(parsed_action['arguments'], env)
+                    observation, valid = await self.conduct_VideoClip_action_async(parsed_action['arguments'], env)
                 except Exception as e:
                     observation = f"Error processing select frames action: {str(e)}"
                     valid = False
                     print(f"Error processing select frames action: {str(e)}; parameters: {parsed_action['arguments']}")
+            elif parsed_action['name'] == 'PathTracer':
+                try:
+                    observation, valid = await self.conduct_path_tracer_action_async(parsed_action['arguments'], env)
+                except Exception as e:
+                    observation = f"Error processing PathTracer action: {str(e)}"
+                    valid = False
+                    print(f"Error processing PathTracer action: {str(e)}; parameters: {parsed_action['arguments']}")
             else:
                 observation = "Unknown action name."
                 valid = False
@@ -350,14 +458,14 @@ class PixelReasonerTool(BaseTool):
         finally:
             loop.close()
     
-    def conduct_select_frames_action(self, parameters, env):
+    def conduct_VideoClip_action(self, parameters, env):
         """
         Synchronous wrapper for select frames action.
         """
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            return loop.run_until_complete(self.conduct_select_frames_action_async(parameters, env))
+            return loop.run_until_complete(self.conduct_VideoClip_action_async(parameters, env))
         finally:
             loop.close()
 
