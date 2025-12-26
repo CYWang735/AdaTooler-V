@@ -30,6 +30,7 @@ from copy import deepcopy
 from transformers import AutoProcessor
 from qwen_vl_utils import process_vision_info
 
+
 system_prompt = """You are a helpful assistant.
 
 # Tools
@@ -39,8 +40,8 @@ You may call one or more functions to assist with the user query.
 You are provided with function signatures within <tools></tools> XML tags:
 <tools>
 {"type": "function", "function": {"name": "crop_image", "description": "Zoom in on the image based on the bounding box coordinates.", "parameters": {"type": "object", "properties": {"bbox_2d": {"type": "array", "description": "coordinates for bounding box of the area you want to zoom in. minimum value is 0 and maximum value is the width/height of the image.", "items": {"type": "number"}}, "target_image": {"type": "number", "description": "The index of the image to crop. Index from 1 to the number of images. Choose 1 to operate on original image."}}, "required": ["bbox_2d", "target_image"]}}}
-{"type": "function", "function": {"name": "FrameAt", "description": "Get a single frame at a specific time from the video.", "parameters": {"type": "object", "properties": {"time": {"type": "number", "description": "Time (in seconds) of the frame to extract."}}, "required": ["time"]}}}
-{"type": "function", "function": {"name": "VideoClip", "description": "Extract a video clip between start and end times.", "parameters": {"type": "object", "properties": {"t_start": {"type": "number", "description": "Start time (in seconds) of the clip."}, "t_end": {"type": "number", "description": "End time (in seconds) of the clip."}}, "required": ["t_start", "t_end"]}}}
+{"type":"function","function":{"name":"FrameAt","description":"Select and return a single frame from the 64 video frames provided as input to the model.","parameters":{"type":"object","properties":{"frame_index":{"type":"integer","description":"The index of the frame to select, ranging from 1 to 64 (corresponding to the 64 frames fed into the model)."}},"required":["frame_index"]}}}
+{"type": "function", "function": {"name": "VideoClip", "description": "Select frames from a video.", "parameters": {"type": "object", "properties": {"target_frames": {"type": "array", "description": "List of frame indices to select from the video (no more than 16 frames in total).", "items": {"type": "integer", "description": "Frame index from 1 to 64."}}}, "required": ["target_frames"]}}}
 {"type": "function", "function": {"name": "PathTracer", "description": "Plot movement or connections between two points on the specified image.", "parameters": {"type": "object", "properties": {"target_image": {"type": "number", "description": "The index of the image to crop. Index from 1 to the number of images. Choose 1 to operate on original image."}, "start_point_2d": {"type": "array", "description": "Starting point coordinates [x1, y1] of the path. minimum value is 0 and maximum value is the width/height of the image.", "items": {"type": "number"}}, "end_point_2d": {"type": "array", "description": "Ending point coordinates [x2, y2] of the path. minimum value is 0 and maximum value is the width/height of the image.", "items": {"type": "number"}}}, "required": ["start_point_2d", "end_point_2d", "target_image"]}}}
 </tools>
 
@@ -50,16 +51,13 @@ For each function call, return a json object with function name and arguments wi
 </tool_call>"""
 
 
-
 guideline = """Guidelines: Understand the given visual information and the user query. Determine if it is beneficial to employ the available visual operations (tools). 
 
 - For a single image, you can zoom in using `crop_image` or trace paths/connections with `PathTracer`.  
 - For multiple images, you can also use `crop_image` and `PathTracer` on each image as needed.  
-- For a video, you can zoom in using `crop_image`, extract a specific frame with `FrameAt`, extract a video segment with `VideoClip`, or trace paths/connections with `PathTracer`.  
+- For a video, you can zoom in using `crop_image`, extract a specific frame with `FrameAt`, Select frames from a video with `VideoClip`, or trace paths/connections with `PathTracer`.  
 
-Reason with the visual information step by step, iteratively refining your solution using the visual feedback from the tools. Put your final answer within \\boxed{}."""
-
-
+Reason with the visual information step by step, iteratively refining your solution using the visual feedback from the tools. Place your text reasoning process within the <think> </think> tags, put any function calls within the <tool_call></tool_call> tags, and provide your final answer within the <answer> </answer> tags."""
 
 
 
