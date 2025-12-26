@@ -357,7 +357,7 @@ class PixelReasonerTool(BaseTool):
              plotted_img = plot_movement(img, path_data, width, height)
              encoded_img = encode_image_url(plotted_img)
              observation = {
-                 "obs": f"Here is the cropped image. (Image Size: {width}x{height})\n<image>",
+                 "obs": f"Here is the plotted image. (Image Size: {width}x{height})\n<image>",
                  "image": encoded_img
              }
              valid = True
@@ -431,6 +431,13 @@ class PixelReasonerTool(BaseTool):
                     observation = f"Error processing select frames action: {str(e)}"
                     valid = False
                     print(f"Error processing select frames action: {str(e)}; parameters: {parsed_action['arguments']}")
+            elif parsed_action['name'] == 'FrameAt':
+                try:
+                    observation, valid = await self.conduct_FrameAt_action_async(parsed_action['arguments'], env)
+                except Exception as e:
+                    observation = f"Error processing select frame action: {str(e)}"
+                    valid = False
+                    print(f"Error processing select frame action: {str(e)}; parameters: {parsed_action['arguments']}")
             elif parsed_action['name'] == 'PathTracer':
                 try:
                     observation, valid = await self.conduct_path_tracer_action_async(parsed_action['arguments'], env)
