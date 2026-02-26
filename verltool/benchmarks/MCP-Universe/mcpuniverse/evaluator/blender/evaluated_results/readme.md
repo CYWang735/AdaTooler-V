@@ -1,1 +1,0 @@
-This folder contains the evaluated results for each blender task.

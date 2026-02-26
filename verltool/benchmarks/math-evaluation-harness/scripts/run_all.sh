@@ -1,2 +1,0 @@
-bash scripts/run_eval_math_greedy_mtrl.sh
-bash scripts/run_eval_math_mtrl.sh
