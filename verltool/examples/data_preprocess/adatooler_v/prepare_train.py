@@ -30,6 +30,16 @@ from copy import deepcopy
 from transformers import AutoProcessor
 from qwen_vl_utils import process_vision_info
 
+
+TYPE_TEMPLATE = {
+    "multiple choice": " Please provide only the single option letter (e.g., A, B, C, D, etc.) within the <answer> </answer> tags.",
+    "numerical": " Please provide the numerical value (e.g., 42 or 3.14) within the <answer> </answer> tags.",
+    "OCR": " Please transcribe text from the image/video clearly and provide your text answer within the <answer> </answer> tags.",
+    "free-form": " Please provide your text answer within the <answer> </answer> tags."
+}
+
+
+
 system_prompt = """You are a helpful assistant.
 
 # Tools
@@ -40,6 +50,7 @@ You are provided with function signatures within <tools></tools> XML tags:
 <tools>
 {"type": "function", "function": {"name": "crop_image", "description": "Zoom in on the image based on the bounding box coordinates.", "parameters": {"type": "object", "properties": {"bbox_2d": {"type": "array", "description": "coordinates for bounding box of the area you want to zoom in. minimum value is 0 and maximum value is the width/height of the image.", "items": {"type": "number"}}, "target_image": {"type": "number", "description": "The index of the image to crop. Index from 1 to the number of images. Choose 1 to operate on original image."}}, "required": ["bbox_2d", "target_image"]}}}
 {"type": "function", "function": {"name": "select_frames", "description": "Select frames from a video.", "parameters": {"type": "object", "properties": {"target_frames": {"type": "array", "description": "List of frame indices to select from the video (no more than 8 frames in total).", "items": {"type": "integer", "description": "Frame index from 1 to 16."}}}, "required": ["target_frames"]}}}
+{"type": "function", "function": {"name": "PathTracer", "description": "Plot movement or connections between two points on the specified image.", "parameters": {"type": "object", "properties": {"target_image": {"type": "number", "description": "The index of the image to crop. Index from 1 to the number of images. Choose 1 to operate on original image."}, "start_point_2d": {"type": "array", "description": "Starting point coordinates [x1, y1] of the path. minimum value is 0 and maximum value is the width/height of the image.", "items": {"type": "number"}}, "end_point_2d": {"type": "array", "description": "Ending point coordinates [x2, y2] of the path. minimum value is 0 and maximum value is the width/height of the image.", "items": {"type": "number"}}}, "required": ["start_point_2d", "end_point_2d", "target_image"]}}}
 </tools>
 
 For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
@@ -47,7 +58,29 @@ For each function call, return a json object with function name and arguments wi
 {"name": <function-name>, "arguments": <args-json-object>}
 </tool_call>"""
 
-guideline = """Guidelines: Understand the given visual information and the user query. Determine if it is beneficial to employ the given visual operations (tools). For a video, we can look closer by `select_frames`. For an image, we can look closer by `crop_image`. Reason with the visual information step by step, and put your final answer within \\boxed{}."""
+
+guideline = """Guidelines: Understand the given visual information and the user query. 
+
+Determine if it is beneficial to employ the given visual operations (tools).
+
+Determine which tool to use based on the input:
+- For a single image, use `crop_image` or `PathTracer`.
+- For a video, use `select_frames`, `crop_image`, or `PathTracer`.
+
+Reason with the visual information step by step.
+You should:
+1. Explain why a tool is necessary.
+2. Call the tool.
+3. Continue reasoning based on the tool output.
+4. Provide the final answer.
+
+Place your text reasoning process within the <think> </think> tags.
+Place any function calls within the <tool_call></tool_call> tags.
+Place your final answer within the <answer> </answer> tags.
+"""
+
+
+
 
 def images_to_video(image_folder, output_path, fps=24):
     images = sorted(glob(os.path.join(image_folder, "*.jpg")))
@@ -69,6 +102,7 @@ def images_to_video(image_folder, output_path, fps=24):
     print(f"Video saved to {output_path}")
 
 def get_mm_content_len(processor, example):
+    # print(example)
     messages = deepcopy(example['prompt'])
     for message in messages:
         content = message["content"]
@@ -108,7 +142,7 @@ def main(
     filter_len=None,
     include_videos=True,
 ):
-    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
+    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-32B-Instruct")
     local_dir = Path(local_dir)
     local_dir = local_dir / (dataset_path.split('/')[-1].replace('-', '_'))
     local_dir.mkdir(parents=True, exist_ok=True)
@@ -117,40 +151,19 @@ def main(
 
     # 500 examples for testing
     train_dataset = dataset
+
+    image_dir = Path('/home/wangcy')
+    video_dir = Path('/home/wangcy')
     
-    # download images and videos
-    image_zip_file = hf_hub_download(repo_id=dataset_path, filename='images.zip', repo_type='dataset')
-    video_zip_file = hf_hub_download(repo_id=dataset_path, filename='videos.zip', repo_type='dataset')
-    # extract the zip files to local_dir/images and local_dir/videos
-    image_dir = local_dir / 'images'
-    video_dir = local_dir / 'videos'
-    image_dir.mkdir(parents=True, exist_ok=True)
-    video_dir.mkdir(parents=True, exist_ok=True)
-    image_extraction_marker = image_dir / 'finish_extracting.txt'
-    video_extraction_marker = video_dir / 'finish_extracting.txt'
-    if not image_extraction_marker.exists():
-        print(f"Extracting images from {image_zip_file} to {image_dir}")
-        with zipfile.ZipFile(image_zip_file, 'r') as zip_ref:
-            zip_ref.extractall(image_dir)
-        with open(image_dir / 'finish_extracting.txt', 'w') as f:
-            f.write('Images extracted successfully.')
-        print(f"Images extracted successfully to {image_dir}.")
-    else:
-        print(f"Images already extracted at {image_dir}. Skipping extraction.")
-    if not video_extraction_marker.exists():
-        print(f"Extracting videos from {video_zip_file} to {video_dir}")
-        with zipfile.ZipFile(video_zip_file, 'r') as zip_ref:
-            zip_ref.extractall(video_dir)
-        with open(video_dir / 'finish_extracting.txt', 'w') as f:
-            f.write('Videos extracted successfully.')
-        print(f"Videos extracted successfully to {video_dir}.")
 
     # add a row to each data item that represents a unique id
     def make_map_fn(split):
 
         def process_fn(example, idx):
             question_raw = example.pop('question')
+            problem_type = example.get("problem_type")
             question_raw += f"\n\n{guideline}"
+            question_raw += TYPE_TEMPLATE[problem_type]
             image = example.pop('image')
             is_video = example.pop('is_video')
             answer = example.pop('answer')
@@ -187,6 +200,7 @@ def main(
                     'qid': example.get('qid', f'{split}_{idx}'),
                     'is_video': bool(is_video),
                     'images': extra_info_images,
+                    'problem_type': problem_type
                 }
             }
             if filter_len and filter_len > 0:
@@ -200,12 +214,12 @@ def main(
         train_dataset = train_dataset.filter(lambda x: not x['is_video'], num_proc=8)
         print(f"Filtered out video examples. Remaining {len(train_dataset)} examples.")
     
-    train_dataset = train_dataset.map(function=make_map_fn('train'), with_indices=True, remove_columns=train_dataset.column_names, num_proc=128)
+    train_dataset = train_dataset.map(function=make_map_fn('train'), with_indices=True, remove_columns=train_dataset.column_names, num_proc=32)
     if filter_len and filter_len > 0:
         _train_dataset = train_dataset.filter(lambda x: x['extra_info']['mm_content_len'] and x['extra_info']['mm_content_len'] <= filter_len, num_proc=8)
         print(f"Filtered {len(train_dataset) - len(_train_dataset)}/{len(train_dataset)} examples from training dataset due to content length > {filter_len}")
         train_dataset = _train_dataset
-    # split 400 as val
+    # split 100 as val
     train_dataset, val_dataset = train_dataset.train_test_split(test_size=100, seed=seed).values()
     
     print(f"Loaded {len(train_dataset)} training samples")
@@ -223,9 +237,3 @@ def main(
 if __name__ == '__main__':
     fire.Fire(main)
     
-"""
-python examples/data_preprocess/pixel_reasoner/prepare_train.py --dataset_path=TIGER-Lab/PixelReasoner-RL-Data --local_dir=data/pixel_reasoner --version max_8192 --include_videos=True --filter_len=8192
-python examples/data_preprocess/pixel_reasoner/prepare_train.py --dataset_path=TIGER-Lab/PixelReasoner-RL-Data --local_dir=data/pixel_reasoner --version no_video --include_videos=False
-python examples/data_preprocess/pixel_reasoner/prepare_train.py --dataset_path=TIGER-Lab/PixelReasoner-RL-Data --local_dir=data/pixel_reasoner --version no_video_max_8192 --include_videos=False --filter_len=8192
-python examples/data_preprocess/pixel_reasoner/prepare_train.py --dataset_path=TIGER-Lab/PixelReasoner-RL-Data --local_dir=data/pixel_reasoner --version no_video_max_2048 --include_videos=False --filter_len=2048
-"""

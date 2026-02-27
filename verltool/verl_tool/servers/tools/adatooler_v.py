@@ -5,12 +5,52 @@ import asyncio
 import concurrent.futures
 from typing import Tuple, Union, List, Dict, Any
 import os
+from PIL import ImageDraw
+
 
 import base64
 import io
 from PIL import Image
 from pathlib import Path
-from verl_tool.agent_loop.vision_utils import process_image
+from verl_tool.llm_agent.vision_utils import process_image
+
+
+
+def plot_movement(im, data, input_width, input_height):
+    """
+    在图像上绘制从起点到终点的路径。
+    """
+    img = im.copy()
+    width, height = img.size
+    draw = ImageDraw.Draw(img)
+    colors = ['red', 'blue']
+    line_width = 4
+
+    if data is None:
+        return img
+
+    for line in data:
+        start_point = line.get("start_point_2d", None)
+        end_point = line.get("end_point_2d", None)
+        if start_point is None or end_point is None:
+            continue
+
+        abs_x_start = float(start_point[0]) / 1000 * width
+        abs_y_start = float(start_point[1]) / 1000 * height
+        abs_x_end = float(end_point[0]) / 1000 * width
+        abs_y_end = float(end_point[1]) / 1000 * height
+
+        draw.line((abs_x_start, abs_y_start, abs_x_end, abs_y_end), fill='black', width=line_width)
+        for i, point in enumerate([start_point, end_point]):
+            color = colors[i % len(colors)]
+            abs_x = float(point[0]) / 1000 * width
+            abs_y = float(point[1]) / 1000 * height
+            radius = 4
+            draw.ellipse([(abs_x - radius, abs_y - radius), (abs_x + radius, abs_y + radius)], fill=color)
+    return img
+
+
+
 
 def crop(str_image, bbox_2d, padding=(0.1,0.1)):
     """
@@ -78,7 +118,7 @@ class PixelReasonerTool(BaseTool):
     tool_type = "pixel_reasoner"
 
     stop_tokens = ["</tool_call>"]
-    valid_mcp_func_names = ['zoom_in', 'crop_image_normalized', 'select_frames', 'crop_image']
+    valid_mcp_func_names = ['zoom_in', 'crop_image_normalized', 'select_frames', 'crop_image', 'PathTracer']
 
     def __init__(self, num_workers=1):
         super().__init__(num_workers)
@@ -186,6 +226,38 @@ class PixelReasonerTool(BaseTool):
             for img_source in img_sources
         ]
         return await asyncio.gather(*tasks)
+
+    async def conduct_path_tracer_action_async(self, parameters, env):
+         """
+         在指定图像上绘制路径。
+         """
+         valid = False
+         required = ['start_point_2d', 'end_point_2d', 'target_image']
+         if not all(k in parameters for k in required):
+             missing = [k for k in required if k not in parameters]
+             return f"Missing parameters: {', '.join(missing)}", False
+
+         try:
+             target_idx = int(parameters['target_image'])
+             img = env['images'][target_idx - 1]
+             if isinstance(img, str):
+                 img = decode_image_url(img)
+             elif isinstance(img, Path):
+                 img = Image.open(img)
+
+             width, height = img.size
+             path_data = [{"start_point_2d": parameters['start_point_2d'],
+                           "end_point_2d": parameters['end_point_2d']}]
+             plotted_img = plot_movement(img, path_data, width, height)
+             encoded_img = encode_image_url(plotted_img)
+             observation = {
+                 "obs": f"Here is the plotted image. (Image Size: {width}x{height})\n<image>",
+                 "image": encoded_img
+             }
+             valid = True
+         except Exception as e:
+             observation = f"Error in path tracing: {str(e)}"
+         return observation, valid
 
     async def conduct_zoom_in_action_async(self, parameters, env):
         """
@@ -301,7 +373,7 @@ class PixelReasonerTool(BaseTool):
         parsed_action, is_valid = self.parse_action(action)
         env = self.load_env(trajectory_id)
         if env['images'] is None:
-            env['images'] = [Path(x) if not x.startswith("data:image") else decode_image_url(x) for x in extra_field.get('images', [])]
+            env['images'] = [Path(x) for x in extra_field["images"]]
         
         if not is_valid:
             observation = ""
@@ -330,6 +402,15 @@ class PixelReasonerTool(BaseTool):
                     observation = f"Error processing select frames action: {str(e)}"
                     valid = False
                     print(f"Error processing select frames action: {str(e)}; parameters: {parsed_action['arguments']}")
+
+            elif parsed_action['name'] == 'PathTracer':
+                try:
+                    observation, valid = await self.conduct_path_tracer_action_async(parsed_action['arguments'], env)
+                except Exception as e:
+                    observation = f"Error processing PathTracer action: {str(e)}"
+                    valid = False
+                    print(f"Error processing PathTracer action: {str(e)}; parameters: {parsed_action['arguments']}")
+                    
             else:
                 observation = "Unknown action name."
                 valid = False
