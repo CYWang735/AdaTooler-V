@@ -116,7 +116,7 @@ We extract the video data into a multi-frame(64 frames), which can be directly o
 We also provide the raw video data. If you would like to customize the number of video frames used for training, you can refer to the code in `scripts/extact_frames.py` to implement this yourself.
 ```
 cd verltool
-python examples/data_preprocess/pixel_reasoner/prepare_train.py --dataset_path=AdaTooler-V/AdaTooler-V-300k --local_dir=data/AdaTooler-V --version max_8192 --include_videos=True --filter_len=8192
+python examples/data_preprocess/adatooler_v/prepare_train.py --dataset_path=AdaTooler-V/AdaTooler-V-300k --local_dir=data/AdaTooler-V --version max_8192 --include_videos=True --filter_len=8192
 ```
 note that the data preprocessing step will **filter out samples whose length exceeds 8192 tokens**, and this process may take some time to complete (approximately **0.5–1 hour**). If you prefer not to apply this filtering, you can remove the `--filter_len` argument. However, be aware that some samples are longer than 8192 tokens, which **may cause issues during training**. Therefore, if filtering is disabled, please ensure that the `max_prompt_length` is **properly configured during training** to avoid potential problems.
 
